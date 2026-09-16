@@ -83,7 +83,12 @@ def _window_elapsed_hours(state: DriverState) -> float:
         return 0.0
     return (state.clock - state.window_start).total_seconds() / 3600
 
-
+def remaining_window_hours(state: DriverState) -> float:
+    """Hours left in the 14-hour window right now (14.0 if no window is open yet)."""
+    if state.window_start is None:
+        return MAX_WINDOW_HOURS
+    return max(0.0, MAX_WINDOW_HOURS - _window_elapsed_hours(state))
+    
 def begin_window_if_needed(state: DriverState) -> DriverState:
     """Start the 14-hour on-duty window if the driver isn't currently in one."""
     if state.window_start is not None:

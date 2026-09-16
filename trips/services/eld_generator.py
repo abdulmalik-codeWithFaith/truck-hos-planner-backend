@@ -73,7 +73,11 @@ def generate_daily_logs(events: list[ScheduleEvent]) -> list[DailyLog]:
         if d not in seen:
             seen.add(d)
             dates.append(d)
-        d_end = e.end_time.date()
+        # If the event ends exactly at midnight, it doesn't actually extend
+        # into the next calendar day — back off by a moment so we don't
+        # spuriously create an empty log for a day the event never touches.
+        effective_end = e.end_time - timedelta(microseconds=1) if e.end_time > e.start_time else e.end_time
+        d_end = effective_end.date()
         if d_end not in seen:
             seen.add(d_end)
             dates.append(d_end)
