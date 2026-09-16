@@ -1,4 +1,3 @@
-## `backend/README.md`
 
 ```markdown
 # TruckHOS — Backend
@@ -97,7 +96,8 @@ inventing silent behavior, these are the explicit choices made and why:
 - **14-hour window scope**: applies to all on-duty activity, not just
   driving — a fixed-duration stop (break, fuel, pickup, dropoff) that
   would push the driver past the window triggers a rest first rather than
-  silently overflowing it.
+  silently overflowing it. This was caught by the automated test suite
+  (see Testing below) rather than assumed correct up front.
 - **Sleeper-berth splits**: only full, consolidated 10-hour rests and
   34-hour restarts are modeled. The FMCSA sleeper-berth split provision
   (e.g. an 8/2 split) is out of scope.
@@ -195,10 +195,23 @@ restart trigger, the 8-hour break trigger, the 11-hour driving limit, the
 generation (including events that span midnight), and invalid
 location/cycle input handling.
 
+This suite directly caught two real bugs during development:
+1. An event ending at exactly midnight was miscounted as touching the
+   next calendar day, producing a spurious empty ELD log entry.
+2. Fixed-duration stops (breaks, fuel, pickup, dropoff) could silently
+   push the driver past the 14-hour on-duty window, since only driving
+   chunks were being checked against the window limit. Fixed by checking
+   remaining window capacity before every on-duty addition, not just
+   driving.
+
+Both are now covered by regression tests.
+
 ## Deployment
 
 Deployed to Render as a Python web service.
 
 - **Build command**: `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate`
 - **Start command**: `gunicorn config.wsgi`
+- Free tier spins down after inactivity; the first request after idle can
+  take 30–60 seconds to respond while it wakes up.
 ```
